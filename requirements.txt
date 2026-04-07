@@ -1,0 +1,6 @@
+# Basic Web App requirements
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+pydantic-settings
