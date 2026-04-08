@@ -2,7 +2,10 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
 import uvicorn
-from fastapi import FastAPI, Path, Query
+from fastapi import FastAPI, Path, Query, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 from services import football_service
 
@@ -23,18 +26,74 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/", tags=["Health"])
+# Initialize templates
+templates = Jinja2Templates(directory="templates")
+
+
+@app.get("/", tags=["UI"])
+async def home(request: Request) -> HTMLResponse:
+    """Redirects to the leagues UI page."""
+    data = await football_service.get_data("competitions")
+    simplified_leagues = [
+        {
+            "id": league.get("id"),
+            "name": league.get("name"),
+            "emblem": league.get("emblem")
+        }
+        for league in data.get("competitions", [])
+    ]
+    return templates.TemplateResponse(
+        request=request,
+        name="leagues.html",
+        context={"request": request, "leagues": simplified_leagues}
+    )
+
+
+@app.get("/health", tags=["Health"])
 async def health_check() -> Dict[str, str]:
     """Simple endpoint to verify the API is running."""
     return {"status": "online", "message": "Welcome to Football Zone"}
 
 
-@app.get("/competitions", tags=["Football"])
-@app.get("/leagues", tags=["Football"])
-async def list_competitions() -> Dict[str, Any]:
-    """Returns all available football leagues/competitions."""
-    return await football_service.get_data("competitions")
+@app.get("/api/competitions", tags=["Football"])
+@app.get("/api/leagues", tags=["Football"])
+async def list_competitions_api() -> Dict[str, Any]:
+    """Returns all available football leagues/competitions as JSON."""
+    data = await football_service.get_data("competitions")
+    simplified_leagues = [
+        {
+            "id": league.get("id"),
+            "name": league.get("name"),
+            "emblem": league.get("emblem")
+        }
+        for league in data.get("competitions", [])
+    ]
+    return {
+        "count": len(simplified_leagues),
+        "leagues": simplified_leagues
+    }
+
+
+@app.get("/leagues", tags=["UI"], response_class=HTMLResponse)
+async def list_competitions_ui(request: Request) -> HTMLResponse:
+    """Returns all available football leagues/competitions in a beautiful UI."""
+    data = await football_service.get_data("competitions")
+    simplified_leagues = [
+        {
+            "id": league.get("id"),
+            "name": league.get("name"),
+            "emblem": league.get("emblem")
+        }
+        for league in data.get("competitions", [])
+    ]
+    return templates.TemplateResponse(
+        request=request,
+        name="leagues.html",
+        context={"request": request, "leagues": simplified_leagues}
+    )
 
 
 @app.get("/competitions/{competition_id}", tags=["Football"])

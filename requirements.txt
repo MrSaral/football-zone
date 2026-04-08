@@ -4,3 +4,4 @@ uvicorn[standard]
 httpx
 python-dotenv
 pydantic-settings
+jinja2

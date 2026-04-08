@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Leagues - Football Zone{% endblock %}
+
+{% block content %}
+<div class="leagues-grid">
+    {% for league in leagues %}
+    <a href="/leagues/{{ league.id }}" class="league-card">
+        <div class="logo-container">
+            {% if league.emblem %}
+                <img src="{{ league.emblem }}" alt="{{ league.name }} logo" class="league-logo">
+            {% else %}
+                <span style="color: #1e293b; font-weight: 300; font-size: 3rem;">{{ league.name[0] }}</span>
+            {% endif %}
+        </div>
+        <h2 class="league-name">{{ league.name }}</h2>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
