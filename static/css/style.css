@@ -123,11 +123,10 @@ h1 {
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-lg);
-    /* Remove padding to avoid parent-width dependency */
     padding: 5%;
     box-shadow: 0 0.625rem 0.9375rem -0.1875rem rgba(0, 0, 0, 0.1);
     transition: var(--transition);
-    overflow: hidden; /* Ensure logo doesn't spill out if slightly over */
+    overflow: hidden;
 }
 
 .league-card:hover .logo-container {
@@ -135,7 +134,7 @@ h1 {
 }
 
 .league-logo {
-    width: 80%; /* Logo will always be 85% of its container */
+    width: 80%;
     height: 80%;
     object-fit: contain;
 }
