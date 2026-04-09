@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }} - Football Zone{% endblock %}
+
+{% block content %}
+<div class="team-page-container">
+    <!-- Team Header -->
+    <div class="team-hero">
+        <div class="logo-container">
+            <img src="{{ team.crest }}" alt="{{ team.name }} crest" class="league-logo">
+        </div>
+        <div class="team-meta">
+            <h1 class="team-title">{{ team.name }}</h1>
+            <p class="team-venue">{{ team.venue }}</p>
+            <div class="team-links">
+                {% if team.website %}
+                <a href="{{ team.website }}" target="_blank" class="team-link">Official Website ↗</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="team-grid">
+        <!-- Left Column: Standings & Info -->
+        <div class="team-col-left">
+            {% if standings %}
+            <div class="team-section-card">
+                <h3 class="section-title">League Standing ({{ competition_name }})</h3>
+                <div class="mini-standings">
+                    <table class="standings-table mini">
+                        <thead>
+                            <tr>
+                                <th class="pos-cell">#</th>
+                                <th>Team</th>
+                                <th class="stat-cell">P</th>
+                                <th class="stat-cell">GD</th>
+                                <th class="pts-cell">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in standings %}
+                            <tr class="team-row-mini {% if row.team.id == team.id %}highlight-row{% endif %}" 
+                                onclick="window.location.href='/teams/{{ row.team.id }}'">
+                                <td class="pos-cell">{{ row.position }}</td>
+                                <td class="team-cell-mini">
+                                    <div class="team-flex">
+                                        <img src="{{ row.team.crest }}" alt="" class="team-crest-xs">
+                                        <span>{{ row.team.shortName or row.team.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="stat-cell">{{ row.playedGames }}</td>
+                                <td class="stat-cell">{{ row.goalDifference }}</td>
+                                <td class="pts-cell"><strong>{{ row.points }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="team-section-card">
+                <h3 class="section-title">Squad Highlights</h3>
+                <div class="squad-list">
+                    {% for player in team.squad[:8] %}
+                    <div class="player-item">
+                        <span class="player-name">{{ player.name }}</span>
+                        <span class="player-pos">{{ player.position }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Results & Fixtures -->
+        <div class="team-col-right">
+            <div class="team-section-card">
+                <h3 class="section-title">Recent Results</h3>
+                <div class="team-matches-list">
+                    {% for match in recent_results %}
+                    <div class="team-match-item">
+                        <div class="match-info-top">
+                            <span class="match-comp">{{ match.competition.name }}</span>
+                            <span class="match-date">{{ match.utcDate[:10]|replace("-", " / ") }}</span>
+                        </div>
+                        <div class="match-score-row">
+                            <div class="team-name-small {% if match.homeTeam.id == team.id %}bold{% endif %}">
+                                {{ match.homeTeam.tla or match.homeTeam.name[:3]|upper }}
+                            </div>
+                            <div class="score-display-small">
+                                {{ match.score.fullTime.home }} - {{ match.score.fullTime.away }}
+                            </div>
+                            <div class="team-name-small {% if match.awayTeam.id == team.id %}bold{% endif %}">
+                                {{ match.awayTeam.tla or match.awayTeam.name[:3]|upper }}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="empty-msg">No recent results found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="team-section-card">
+                <h3 class="section-title">Upcoming Fixtures</h3>
+                <div class="team-matches-list">
+                    {% for match in upcoming_fixtures %}
+                    <div class="team-match-item">
+                        <div class="match-info-top">
+                            <span class="match-comp">{{ match.competition.name }}</span>
+                            <span class="match-date">{{ match.utcDate[:10]|replace("-", " / ") }}</span>
+                        </div>
+                        <div class="match-score-row">
+                            <div class="team-name-small {% if match.homeTeam.id == team.id %}bold{% endif %}">
+                                {{ match.homeTeam.tla or match.homeTeam.name[:3]|upper }}
+                            </div>
+                            <div class="vs-label-small">vs</div>
+                            <div class="team-name-small {% if match.awayTeam.id == team.id %}bold{% endif %}">
+                                {{ match.awayTeam.tla or match.awayTeam.name[:3]|upper }}
+                            </div>
+                        </div>
+                        <div class="match-time-small">{{ match.utcDate[11:16] }} {{ timezone }}</div>
+                    </div>
+                    {% else %}
+                    <p class="empty-msg">No upcoming fixtures found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-actions">
+        <a href="javascript:history.back()" class="btn-secondary">← Go Back</a>
+    </div>
+</div>
+{% endblock %}

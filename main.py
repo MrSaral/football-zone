@@ -13,10 +13,8 @@ from services import football_service
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown logic for the application."""
-    # Initialize resources
     await football_service.start()
     yield
-    # Cleanup resources
     await football_service.close()
 
 
@@ -26,10 +24,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Initialize templates
 templates = Jinja2Templates(directory="templates")
 
 
@@ -39,8 +34,6 @@ async def home(request: Request) -> HTMLResponse:
     try:
         data = await football_service.get_data("competitions")
         all_leagues = data.get("competitions", [])
-        
-        # Filter for top leagues typically available in free tier
         top_codes = {"PL", "PD", "BL1", "SA", "FL1", "CL", "DED", "PPL", "ELC", "BSA"}
         
         simplified_leagues = [
@@ -53,7 +46,6 @@ async def home(request: Request) -> HTMLResponse:
             if league.get("code") in top_codes
         ]
         
-        # If filtering made it empty (or no matches), just show the first few to avoid an empty page
         if not simplified_leagues and all_leagues:
             simplified_leagues = [
                 {
@@ -77,38 +69,12 @@ async def home(request: Request) -> HTMLResponse:
         )
 
 
-@app.get("/health", tags=["Health"])
-async def health_check() -> Dict[str, str]:
-    """Simple endpoint to verify the API is running."""
-    return {"status": "online", "message": "Welcome to Football Zone"}
-
-
-@app.get("/api/competitions", tags=["Football"])
-@app.get("/api/leagues", tags=["Football"])
-async def list_competitions_api() -> Dict[str, Any]:
-    """Returns all available football leagues/competitions as JSON."""
-    data = await football_service.get_data("competitions")
-    simplified_leagues = [
-        {
-            "id": league.get("code") or league.get("id"),
-            "name": league.get("name"),
-            "emblem": league.get("emblem") or league.get("crest")
-        }
-        for league in data.get("competitions", [])
-    ]
-    return {
-        "count": len(simplified_leagues),
-        "leagues": simplified_leagues
-    }
-
-
 @app.get("/leagues", tags=["UI"], response_class=HTMLResponse)
 async def list_competitions_ui(request: Request) -> HTMLResponse:
-    """Returns all available football leagues/competitions in a beautiful UI."""
+    """Returns all available football leagues in a beautiful UI."""
     try:
         data = await football_service.get_data("competitions")
         all_leagues = data.get("competitions", [])
-        
         top_codes = {"PL", "PD", "BL1", "SA", "FL1", "CL", "DED", "PPL", "ELC", "BSA"}
         
         simplified_leagues = [
@@ -147,37 +113,30 @@ async def list_competitions_ui(request: Request) -> HTMLResponse:
 @app.get("/leagues/{competition_id}", tags=["UI"], response_class=HTMLResponse)
 async def get_competition_ui(
     request: Request,
-    competition_id: str = Path(
-        ..., description="The unique code for the league (e.g., 'PL', 'BL1')"
-    )
+    competition_id: str = Path(..., description="The unique code for the league (e.g., 'PL', 'BL1')")
 ) -> HTMLResponse:
-    """
-    Fetch standings for a single competition and render the standings UI.
-    """
+    """Fetch standings and upcoming fixtures for a league and render the UI."""
     try:
-        # Fetch standings
         standings_data = await football_service.get_data(f"competitions/{competition_id}/standings")
         
-        # Fetch upcoming matches specifically
-        # We include LIVE and IN_PLAY in case a game is currently happening
-        upcoming_data = await football_service.get_data(
-            f"competitions/{competition_id}/matches",
-            params={"status": "SCHEDULED,TIMED,LIVE,IN_PLAY", "limit": 10}
-        )
-        upcoming_fixtures = upcoming_data.get("matches", [])
+        # Fetch all matches for the competition and filter locally for robustness
+        all_matches_data = await football_service.get_data(f"competitions/{competition_id}/matches")
+        all_matches = all_matches_data.get("matches", [])
         
-        # Take up to 5
-        carousel_matches = upcoming_fixtures[:5]
-        carousel_title = "Upcoming Fixtures"
+        upcoming_fixtures = [m for m in all_matches if m.get("status") in ["SCHEDULED", "TIMED", "LIVE", "IN_PLAY"]][:5]
+        recent_results = [m for m in all_matches if m.get("status") == "FINISHED"]
+        recent_results = recent_results[-5:]
+        recent_results.reverse()
         
-        # We usually want the "TOTAL" standings type
+        carousel_matches = upcoming_fixtures if upcoming_fixtures else recent_results
+        carousel_title = "Upcoming Fixtures" if upcoming_fixtures else "Recent Results"
+        
         standings = next(
             (s for s in standings_data.get("standings", []) if s.get("type") == "TOTAL"), 
             standings_data.get("standings", [{}])[0]
         )
         
         competition_data = standings_data.get("competition", {})
-        # Normalize emblem/crest
         if not competition_data.get("emblem") and competition_data.get("crest"):
             competition_data["emblem"] = competition_data.get("crest")
             
@@ -195,7 +154,6 @@ async def get_competition_ui(
             }
         )
     except Exception as e:
-        # Fallback or error page
         return templates.TemplateResponse(
             request=request,
             name="leagues.html",
@@ -203,37 +161,91 @@ async def get_competition_ui(
         )
 
 
-@app.get("/api/competitions/{competition_id}", tags=["Football"])
-@app.get("/api/leagues/{competition_id}", tags=["Football"])
-async def get_competition_api(
-    competition_id: str = Path(
-        ..., description="The unique code for the league (e.g., 'PL', 'BL1')"
-    )
-) -> Dict[str, Any]:
-    """
-    Fetch details for a single competition as JSON.
-    """
-    return await football_service.get_data(f"competitions/{competition_id}")
+@app.get("/teams/{team_id}", response_class=HTMLResponse, tags=["UI"])
+async def get_team_ui(
+    request: Request,
+    team_id: int = Path(..., gt=0)
+) -> HTMLResponse:
+    """Fetch comprehensive details for a specific team and render the UI."""
+    try:
+        team = await football_service.get_data(f"teams/{team_id}")
+        
+        comp_id = None
+        competitions = team.get("runningCompetitions", [])
+        if competitions:
+            comp_id = competitions[0].get("code") or competitions[0].get("id")
+
+        standings_context = []
+        competition_name = "N/A"
+        if comp_id:
+            try:
+                standings_data = await football_service.get_data(f"competitions/{comp_id}/standings")
+                competition_name = standings_data.get("competition", {}).get("name", "League")
+                table = next(
+                    (s.get("table", []) for s in standings_data.get("standings", []) if s.get("type") == "TOTAL"),
+                    []
+                )
+                
+                team_idx = -1
+                for i, row in enumerate(table):
+                    if row.get("team", {}).get("id") == team_id:
+                        team_idx = i
+                        break
+                
+                if team_idx != -1:
+                    start = max(0, team_idx - 2)
+                    end = min(len(table), team_idx + 3)
+                    standings_context = table[start:end]
+            except Exception:
+                pass
+
+        matches_data = await football_service.get_data(f"teams/{team_id}/matches")
+        all_matches = matches_data.get("matches", [])
+        recent_results = [m for m in all_matches if m.get("status") == "FINISHED"][-3:]
+        recent_results.reverse()
+        upcoming_fixtures = [m for m in all_matches if m.get("status") in ["SCHEDULED", "TIMED", "LIVE", "IN_PLAY"]][:3]
+        
+        return templates.TemplateResponse(
+            request=request,
+            name="team_details.html",
+            context={
+                "request": request,
+                "team": team,
+                "competition_name": competition_name,
+                "standings": standings_context,
+                "recent_results": recent_results,
+                "upcoming_fixtures": upcoming_fixtures,
+                "timezone": "UTC"
+            }
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": [], "error": f"Error loading team: {str(e)}"}
+        )
 
 
-@app.get("/teams/{team_id}", tags=["Football"])
-async def get_team(
-    team_id: int = Path(..., gt=0)  # Validating that ID is a positive integer
-) -> Dict[str, Any]:
-    """Fetch details for a specific football team."""
+@app.get("/api/teams/{team_id}", tags=["Football"])
+async def get_team_api(team_id: int = Path(..., gt=0)) -> Dict[str, Any]:
+    """Fetch details for a specific football team as JSON."""
     return await football_service.get_data(f"teams/{team_id}")
 
 
-@app.get("/teams/{team_id}/matches", tags=["Football"])
-async def get_team_matches(
+@app.get("/api/teams/{team_id}/matches", tags=["Football"])
+async def get_team_matches_api(
     team_id: int = Path(..., gt=0),
-    status: Optional[str] = Query(
-        None, description="Filter by: SCHEDULED, LIVE, FINISHED"
-    ),
+    status: Optional[str] = Query(None, description="Filter by: SCHEDULED, LIVE, FINISHED")
 ) -> Dict[str, Any]:
-    """Fetch recent or upcoming matches for a specific team."""
+    """Fetch recent or upcoming matches for a specific team as JSON."""
     params = {"status": status} if status else None
     return await football_service.get_data(f"teams/{team_id}/matches", params=params)
+
+
+@app.get("/health", tags=["Health"])
+async def health_check() -> Dict[str, str]:
+    """Simple endpoint to verify the API is running."""
+    return {"status": "online", "message": "Welcome to Football Zone"}
 
 
 if __name__ == "__main__":
