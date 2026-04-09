@@ -39,9 +39,9 @@ async def home(request: Request) -> HTMLResponse:
     data = await football_service.get_data("competitions")
     simplified_leagues = [
         {
-            "id": league.get("id"),
+            "id": league.get("code") or league.get("id"),
             "name": league.get("name"),
-            "emblem": league.get("emblem")
+            "emblem": league.get("emblem") or league.get("crest")
         }
         for league in data.get("competitions", [])
     ]
@@ -65,9 +65,9 @@ async def list_competitions_api() -> Dict[str, Any]:
     data = await football_service.get_data("competitions")
     simplified_leagues = [
         {
-            "id": league.get("id"),
+            "id": league.get("code") or league.get("id"),
             "name": league.get("name"),
-            "emblem": league.get("emblem")
+            "emblem": league.get("emblem") or league.get("crest")
         }
         for league in data.get("competitions", [])
     ]
@@ -83,9 +83,9 @@ async def list_competitions_ui(request: Request) -> HTMLResponse:
     data = await football_service.get_data("competitions")
     simplified_leagues = [
         {
-            "id": league.get("id"),
+            "id": league.get("code") or league.get("id"),
             "name": league.get("name"),
-            "emblem": league.get("emblem")
+            "emblem": league.get("emblem") or league.get("crest")
         }
         for league in data.get("competitions", [])
     ]
@@ -96,16 +96,58 @@ async def list_competitions_ui(request: Request) -> HTMLResponse:
     )
 
 
-@app.get("/competitions/{competition_id}", tags=["Football"])
-@app.get("/leagues/{competition_id}", tags=["Football"])
-async def get_competition(
+@app.get("/leagues/{competition_id}", tags=["UI"], response_class=HTMLResponse)
+async def get_competition_ui(
+    request: Request,
+    competition_id: str = Path(
+        ..., description="The unique code for the league (e.g., 'PL', 'BL1')"
+    )
+) -> HTMLResponse:
+    """
+    Fetch standings for a single competition and render the standings UI.
+    """
+    try:
+        data = await football_service.get_data(f"competitions/{competition_id}/standings")
+        
+        # We usually want the "TOTAL" standings type
+        standings = next(
+            (s for s in data.get("standings", []) if s.get("type") == "TOTAL"), 
+            data.get("standings", [{}])[0]
+        )
+        
+        competition_data = data.get("competition", {})
+        # Normalize emblem/crest
+        if not competition_data.get("emblem") and competition_data.get("crest"):
+            competition_data["emblem"] = competition_data.get("crest")
+            
+        return templates.TemplateResponse(
+            request=request,
+            name="league_standings.html",
+            context={
+                "request": request,
+                "competition": competition_data,
+                "season": data.get("season", {}),
+                "standings": standings
+            }
+        )
+    except Exception as e:
+        # Fallback or error page
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": [], "error": str(e)}
+        )
+
+
+@app.get("/api/competitions/{competition_id}", tags=["Football"])
+@app.get("/api/leagues/{competition_id}", tags=["Football"])
+async def get_competition_api(
     competition_id: str = Path(
         ..., description="The unique code for the league (e.g., 'PL', 'BL1')"
     )
 ) -> Dict[str, Any]:
     """
-    Fetch details for a single competition (like 'PL' for Premier League).
-    This works with both /competitions and /leagues paths.
+    Fetch details for a single competition as JSON.
     """
     return await football_service.get_data(f"competitions/{competition_id}")
 

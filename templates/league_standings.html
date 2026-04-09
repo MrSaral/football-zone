@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ competition.name }} Standings - Football Zone{% endblock %}
+
+{% block content %}
+<div class="league-header-banner">
+    {% set display_logo = competition.emblem or competition.crest %}
+    <div class="logo-container small">
+        {% if display_logo %}
+            <img src="{{ display_logo }}" alt="{{ competition.name }} logo" class="league-logo">
+        {% else %}
+            <span style="color: #1e293b; font-weight: 300; font-size: 1.5rem;">{{ competition.name[0] }}</span>
+        {% endif %}
+    </div>
+    <div class="header-text">
+        <h2 class="league-name-display">{{ competition.name }}</h2>
+        <p class="season-info">Season {{ season.startDate[:4] }} / {{ season.endDate[:4] }}</p>
+    </div>
+</div>
+
+<div class="table-container-outer">
+    <div class="table-responsive">
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th class="pos-cell">#</th>
+                    <th class="team-cell-head">Team</th>
+                    <th class="stat-cell">MP</th>
+                    <th class="stat-cell desktop-only">W</th>
+                    <th class="stat-cell desktop-only">D</th>
+                    <th class="stat-cell desktop-only">L</th>
+                    <th class="stat-cell desktop-only">GF</th>
+                    <th class="stat-cell desktop-only">GA</th>
+                    <th class="stat-cell">GD</th>
+                    <th class="pts-cell">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in standings.table %}
+                <tr class="team-row-link" onclick="window.location.href='/teams/{{ entry.team.id }}'">
+                    <td class="pos-cell">{{ entry.position }}</td>
+                    <td class="team-cell">
+                        <div class="team-flex">
+                            <img src="{{ entry.team.crest }}" alt="{{ entry.team.name }} crest" class="team-crest-mini">
+                            <span class="team-name-text">{{ entry.team.name }}</span>
+                        </div>
+                    </td>
+                    <td class="stat-cell">{{ entry.playedGames }}</td>
+                    <td class="stat-cell desktop-only">{{ entry.won }}</td>
+                    <td class="stat-cell desktop-only">{{ entry.draw }}</td>
+                    <td class="stat-cell desktop-only">{{ entry.lost }}</td>
+                    <td class="stat-cell desktop-only">{{ entry.goalsFor }}</td>
+                    <td class="stat-cell desktop-only">{{ entry.goalsAgainst }}</td>
+                    <td class="stat-cell">{{ entry.goalDifference }}</td>
+                    <td class="pts-cell"><strong>{{ entry.points }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="nav-actions">
+    <a href="/leagues" class="btn-secondary">Back to Leagues</a>
+</div>
+{% endblock %}
