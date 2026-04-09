@@ -3,6 +3,14 @@
 {% block title %}Leagues - Football Zone{% endblock %}
 
 {% block content %}
+{% if error %}
+<div class="error-container" style="text-align: center; padding: var(--space-xl); color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 1rem; margin-bottom: var(--space-xl);">
+    <h3>Unable to load leagues</h3>
+    <p>{{ error }}</p>
+    <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: var(--space-md);">Please check your API key or try again later.</p>
+</div>
+{% endif %}
+
 <div class="leagues-grid">
     {% for league in leagues %}
     <a href="/leagues/{{ league.id }}" class="league-card">

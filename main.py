@@ -36,20 +36,45 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", tags=["UI"])
 async def home(request: Request) -> HTMLResponse:
     """Redirects to the leagues UI page."""
-    data = await football_service.get_data("competitions")
-    simplified_leagues = [
-        {
-            "id": league.get("code") or league.get("id"),
-            "name": league.get("name"),
-            "emblem": league.get("emblem") or league.get("crest")
-        }
-        for league in data.get("competitions", [])
-    ]
-    return templates.TemplateResponse(
-        request=request,
-        name="leagues.html",
-        context={"request": request, "leagues": simplified_leagues}
-    )
+    try:
+        data = await football_service.get_data("competitions")
+        all_leagues = data.get("competitions", [])
+        
+        # Filter for top leagues typically available in free tier
+        top_codes = {"PL", "PD", "BL1", "SA", "FL1", "CL", "DED", "PPL", "ELC", "BSA"}
+        
+        simplified_leagues = [
+            {
+                "id": league.get("code") or league.get("id"),
+                "name": league.get("name"),
+                "emblem": league.get("emblem") or league.get("crest")
+            }
+            for league in all_leagues
+            if league.get("code") in top_codes
+        ]
+        
+        # If filtering made it empty (or no matches), just show the first few to avoid an empty page
+        if not simplified_leagues and all_leagues:
+            simplified_leagues = [
+                {
+                    "id": l.get("code") or l.get("id"),
+                    "name": l.get("name"),
+                    "emblem": l.get("emblem") or l.get("crest")
+                }
+                for l in all_leagues[:12]
+            ]
+
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": simplified_leagues, "timezone": "UTC"}
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": [], "error": str(e), "timezone": "UTC"}
+        )
 
 
 @app.get("/health", tags=["Health"])
@@ -80,20 +105,43 @@ async def list_competitions_api() -> Dict[str, Any]:
 @app.get("/leagues", tags=["UI"], response_class=HTMLResponse)
 async def list_competitions_ui(request: Request) -> HTMLResponse:
     """Returns all available football leagues/competitions in a beautiful UI."""
-    data = await football_service.get_data("competitions")
-    simplified_leagues = [
-        {
-            "id": league.get("code") or league.get("id"),
-            "name": league.get("name"),
-            "emblem": league.get("emblem") or league.get("crest")
-        }
-        for league in data.get("competitions", [])
-    ]
-    return templates.TemplateResponse(
-        request=request,
-        name="leagues.html",
-        context={"request": request, "leagues": simplified_leagues}
-    )
+    try:
+        data = await football_service.get_data("competitions")
+        all_leagues = data.get("competitions", [])
+        
+        top_codes = {"PL", "PD", "BL1", "SA", "FL1", "CL", "DED", "PPL", "ELC", "BSA"}
+        
+        simplified_leagues = [
+            {
+                "id": league.get("code") or league.get("id"),
+                "name": league.get("name"),
+                "emblem": league.get("emblem") or league.get("crest")
+            }
+            for league in all_leagues
+            if league.get("code") in top_codes
+        ]
+        
+        if not simplified_leagues and all_leagues:
+            simplified_leagues = [
+                {
+                    "id": l.get("code") or l.get("id"),
+                    "name": l.get("name"),
+                    "emblem": l.get("emblem") or l.get("crest")
+                }
+                for l in all_leagues[:12]
+            ]
+
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": simplified_leagues, "timezone": "UTC"}
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            request=request,
+            name="leagues.html",
+            context={"request": request, "leagues": [], "error": str(e), "timezone": "UTC"}
+        )
 
 
 @app.get("/leagues/{competition_id}", tags=["UI"], response_class=HTMLResponse)
@@ -107,15 +155,28 @@ async def get_competition_ui(
     Fetch standings for a single competition and render the standings UI.
     """
     try:
-        data = await football_service.get_data(f"competitions/{competition_id}/standings")
+        # Fetch standings
+        standings_data = await football_service.get_data(f"competitions/{competition_id}/standings")
+        
+        # Fetch upcoming matches specifically
+        # We include LIVE and IN_PLAY in case a game is currently happening
+        upcoming_data = await football_service.get_data(
+            f"competitions/{competition_id}/matches",
+            params={"status": "SCHEDULED,TIMED,LIVE,IN_PLAY", "limit": 10}
+        )
+        upcoming_fixtures = upcoming_data.get("matches", [])
+        
+        # Take up to 5
+        carousel_matches = upcoming_fixtures[:5]
+        carousel_title = "Upcoming Fixtures"
         
         # We usually want the "TOTAL" standings type
         standings = next(
-            (s for s in data.get("standings", []) if s.get("type") == "TOTAL"), 
-            data.get("standings", [{}])[0]
+            (s for s in standings_data.get("standings", []) if s.get("type") == "TOTAL"), 
+            standings_data.get("standings", [{}])[0]
         )
         
-        competition_data = data.get("competition", {})
+        competition_data = standings_data.get("competition", {})
         # Normalize emblem/crest
         if not competition_data.get("emblem") and competition_data.get("crest"):
             competition_data["emblem"] = competition_data.get("crest")
@@ -126,8 +187,11 @@ async def get_competition_ui(
             context={
                 "request": request,
                 "competition": competition_data,
-                "season": data.get("season", {}),
-                "standings": standings
+                "season": standings_data.get("season", {}),
+                "standings": standings,
+                "carousel_matches": carousel_matches,
+                "carousel_title": carousel_title,
+                "timezone": "UTC"
             }
         )
     except Exception as e:

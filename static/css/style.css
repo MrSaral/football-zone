@@ -324,6 +324,213 @@ footer {
     color: var(--primary-color);
 }
 
+/* Fixtures Section */
+.fixtures-section {
+    margin-bottom: var(--space-xl);
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: var(--space-md);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Carousel Styles */
+.carousel-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.fixtures-carousel {
+    display: flex;
+    gap: var(--space-md);
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    padding: var(--space-xs);
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.fixtures-carousel::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.carousel-item {
+    flex: 0 0 calc(33.333% - var(--space-md));
+    scroll-snap-align: center;
+    min-width: 18rem;
+}
+
+.carousel-btn {
+    background: var(--card-bg);
+    border: 0.0625rem solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.carousel-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 1rem var(--primary-color);
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    min-width: 4rem;
+}
+
+.score-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.score-dash {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.match-vs-indicator {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    min-width: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vs-text-carousel {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@media (max-width: 64rem) {
+    .carousel-item {
+        flex: 0 0 calc(50% - var(--space-md));
+    }
+}
+
+@media (max-width: 48rem) {
+    .carousel-item {
+        flex: 0 0 100%;
+    }
+    
+    .carousel-btn {
+        display: none; /* Use touch scroll on mobile */
+    }
+}
+
+/* Specific League Page Adjustments */
+.league-page-header {
+    margin-top: calc(-1 * var(--space-xl)); /* Pull content up to reduce header gap */
+}
+
+.fixture-card {
+    background: var(--card-bg);
+    border-radius: 0.75rem;
+    padding: var(--space-md);
+    border: 0.0625rem solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: var(--transition);
+    gap: 0.25rem; /* Reduced from var(--space-sm) */
+}
+
+.fixture-card:hover {
+    border-color: var(--primary-color);
+    background: var(--card-hover);
+}
+
+.match-details-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    margin-top: 0; /* Removed margin */
+    padding-top: 0.25rem; /* Reduced padding */
+    width: 100%;
+}
+
+.match-date-full {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.match-time-full {
+    font-size: 0.8125rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.team-vs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 1;
+}
+
+.team-vs:first-child {
+    justify-content: flex-end;
+}
+
+.team-vs:last-child {
+    justify-content: flex-start;
+}
+
+.team-crest-xs {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+}
+
+.team-abbr {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--text-main);
+}
+
+.vs-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
 /* Responsive Table */
 @media (max-width: 48rem) {
     .desktop-only {
