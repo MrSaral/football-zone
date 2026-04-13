@@ -4,7 +4,12 @@ uvicorn[standard]
 httpx
 python-dotenv
 pydantic-settings
+
+# UI
 jinja2
+
+# Rate Limiting
+cachetools
 
 # Testing
 pytest
