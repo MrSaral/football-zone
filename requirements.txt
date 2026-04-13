@@ -5,3 +5,8 @@ httpx
 python-dotenv
 pydantic-settings
 jinja2
+
+# Testing
+pytest
+pytest-asyncio
+pytest-mock
