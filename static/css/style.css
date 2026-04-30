@@ -72,6 +72,37 @@ h1 {
     font-weight: 500;
 }
 
+/* Breadcrumbs */
+.breadcrumb-container {
+    margin-top: calc(-1 * var(--space-xl)); /* Move breadcrumbs up */
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 10;
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.breadcrumbs a {
+    color: var(--primary-color);
+    transition: var(--transition);
+}
+
+.breadcrumbs a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+.breadcrumbs span {
+    color: var(--text-main);
+}
+
 .leagues-grid {
     display: grid;
     /* Responsive grid: columns adjust automatically based on available width */
@@ -447,7 +478,7 @@ footer {
 
 /* Specific League Page Adjustments */
 .league-page-header {
-    margin-top: calc(-1 * var(--space-xl)); /* Pull content up to reduce header gap */
+    /* Removed negative margin to prevent overlap with breadcrumbs */
 }
 
 .fixture-card {

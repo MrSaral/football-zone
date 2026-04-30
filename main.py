@@ -211,6 +211,7 @@ async def get_team_ui(
             context={
                 "request": request,
                 "team": team,
+                "competition_id": comp_id,
                 "competition_name": competition_name,
                 "standings": standings_context,
                 "recent_results": recent_results,

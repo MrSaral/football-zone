@@ -2,6 +2,12 @@
 
 {% block title %}{{ competition.name }} Standings - Football Zone{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="/">Home</a> &raquo; <span>{{ competition.name }}</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="league-page-header">
     <div class="league-header-banner">

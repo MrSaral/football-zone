@@ -2,6 +2,16 @@
 
 {% block title %}{{ team.name }} - Football Zone{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="/">Home</a> &raquo; 
+    {% if competition_id %}
+    <a href="/leagues/{{ competition_id }}">{{ competition_name }}</a> &raquo; 
+    {% endif %}
+    <span>{{ team.name }}</span>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="team-page-container">
     <!-- Team Header -->
