@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,8 +9,7 @@ class Settings(BaseSettings):
     ensuring we don't leak the API key accidentally.
     """
 
-    # AIREVIEW: Consider adding field validation (e.g., min_length) to ensure key is present
-    FOOTBALL_API_KEY: str
+    FOOTBALL_API_KEY: str = Field(..., min_length=10, description="API Key for football-data.org")
     FOOTBALL_BASE_URL: str = "https://api.football-data.org/v4/"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
